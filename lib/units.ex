@@ -1,48 +1,149 @@
 defmodule Units do 
 
+  @moduledoc """
+  Arithmetic for converting SI unit prefixes.
+
+  ## Examples
+
+      iex> Units.from(1, :mega, :byte) |> Units.to_int(:kilo, :byte)
+      1024
+      iex> Units.from(1, :mega, :byte) |> Units.to_int(:byte)
+      1048576
+      iex> Units.from(2, :kilo, :meter) |> Units.to_int(:centi, :meter)
+      200000
+
+  The following units of measurement are recognized:
+
+  ### :meter
+
+  `:pico`, `:nano`, `:micro`, `:milli`, `:centi`, `:deci`, `:deca`, `:hecto`, `:kilo`, `:mega`, `:giga`
+
+  ### :byte
+
+  `:kilo`, `:mega`, `:giga`, `:tera`, `:peta`
+
+  """
+
   @index %{:byte => [
-            {:one,    1024}, 
-            {:kilo,   1024},
-            {:mega,   1024},  
-            {:giga,   1024},  
-            {:tera,   1024}, 
-            {:peta,   1024}]}
+            {:one,    {1024, 1024}}, 
+            {:kilo,   {1024, 1024}},
+            {:mega,   {1024, 1024}},
+            {:giga,   {1024, 1024}},  
+            {:tera,   {1024, 1024}}, 
+            {:peta,   {1024, 1024}}],
 
-  # Creates new unit
+           :meter => [
+             {:pico,  {1000, 1000}},
+             {:nano,  {1000, 1000}},
+             {:micro, {1000, 1000}},
+             {:milli, {1000, 10}},
+             {:centi, {10, 10}},
+             {:deci,  {10, 10}},
+             {:one,   {10, 10}},
+             {:deca,  {10, 10}},
+             {:hecto, {10, 10}},
+             {:kilo,  {10, 1000}},
+             {:mega,  {1000, 1000}},
+             {:giga,  {1000, 1000}}
+           ]
+          }
+
+  @doc """
+  Creates new unit and uses a single unit of measurement. 
+
+  Example:
+
+      iex> Units.from(1, :meter)
+      %{amount: 1, quantity: :meter, unit: :one}
+  """
   def from(amount, quantity), do: from(amount, :one, quantity)
-  def from(amount, unit, quantity) when is_atom(unit) and is_integer(amount), do: %{amount: amount, unit: unit, quantity: quantity}
 
-  # Converts a unit to another and returns a unit
+  @doc """
+  Creates new unit. 
+
+  Example:
+
+      iex> Units.from(2, :kilo, :byte)
+      %{amount: 2, quantity: :byte, unit: :kilo}
+  """
+  def from(amount, unit, quantity) 
+      when is_atom(unit) 
+      and  is_integer(amount), do: %{amount: amount, unit: unit, quantity: quantity}
+
+  @doc """
+  Converts a unit to another and returns a unit. Uses a single unit of measurement.
+
+  Example:
+
+      iex> Units.from(1, :kilo, :meter) |> Units.to(:meter)
+      %{amount: 1000, quantity: :meter, unit: :one}
+  """
   def to(amount, quantity), do: to(amount, :one, quantity)
-  def to(%{amount: amount, unit: src_unit, quantity: src_quantity}, dst_unit, dst_quantity) when is_integer(amount) and is_atom(src_unit) and is_atom(dst_unit) and is_atom(dst_quantity) and src_quantity == dst_quantity do
+
+  @doc """
+  Converts a unit to another and returns a unit.
+
+  Example:
+
+      iex> Units.from(100, :deci, :meter) |> Units.to(:centi, :meter)
+      %{amount: 1000, quantity: :meter, unit: :centi}
+  """
+  def to(%{amount: amount, unit: src_unit, quantity: src_quantity}, dst_unit, dst_quantity) 
+      when is_integer(amount) 
+      and  is_atom(src_unit)
+      and  is_atom(dst_unit) 
+      and  is_atom(dst_quantity) 
+      and  src_quantity == dst_quantity do
     index = @index[dst_quantity]
     %{amount: (convert index, amount, unit_index(index, src_unit), unit_index(index, dst_unit)), unit: dst_unit, quantity: dst_quantity}
   end
 
-  # Converts a unit to another and returns an integer. Short for to/2 |> int/1
+  @doc """
+  Converts a unit to another and returns an integer. Short for to/2 |> int/1
+  """
   def to_int(amount, quantity), do: to_int(amount, :one, quantity)
+
+  @doc """
+  Converts a unit to another and returns an integer. Short for to/3 |> int/1
+  """
   def to_int(amount, dst_unit, quantity), do: to(amount, dst_unit, quantity) |> int
 
-  # Converts a unit to another and returns a float. Short for to/2 |> float/1
+  @doc """
+  Converts a unit to another and returns a float. Short for to/2 |> float/1
+  """
   def to_float(amount, quantity), do: to_float(amount, :one, quantity)
+
+  @doc """
+  Converts a unit to another and returns a float. Short for to/3 |> float/1
+  """
   def to_float(amount, dst_unit, quantity), do: to(amount, dst_unit, quantity) |> float
 
-  # Returns the amount as an integer
-  def int(%{amount: amount}) when is_integer(amount), do: amount
-  def int(%{amount: amount}) when is_float(amount),   do: Float.floor amount
+  @doc """
+  Returns the amount as an integer
+  """
+  def int(%{amount: amount}) 
+      when is_integer(amount), do: amount
 
-  # Returns the amount as a float
+  @doc """
+  Returns the amount as an integer
+  """
+  def int(%{amount: amount}) 
+      when is_float(amount),   do: Float.floor amount
+
+  @doc """
+  Returns the amount as a float
+  """
   def float(%{amount: amount}), do: amount
 
-  defp unit_index(index, unit) when is_atom(unit), do: Enum.find_index(index, fn {x, _} -> x == unit end)
+  defp unit_index(index, unit), do: Enum.find_index(index, fn {x, _} -> x == unit end)
 
   defp convert(index, amount, src, dst) when src < dst do
-    {_, step} = Enum.at(index, src)
+    {_, {_, step}} = Enum.at(index, src)
     convert index, (amount / step), src + 1, dst
   end
 
   defp convert(index, amount, src, dst) when src > dst do
-    {_, step} = Enum.at(index, src)
+    {_, {step, _}} = Enum.at(index, src)
     convert index, (amount * step), src - 1, dst
   end
 

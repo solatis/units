@@ -1,16 +1,24 @@
 defmodule Units.Mixfile do
   use Mix.Project
 
+  @version "1.0.0"
+
   def project do
     [app: :units,
-     version: "0.0.1",
+     version: @version,
      elixir: "~> 1.1",
      build_embedded: Mix.env == :prod,
      start_permanent: Mix.env == :prod,
      deps: deps,
-     package: package,
-     description: description]
 
+     # Hex
+     package: package,
+     description: description,
+
+     # Docs
+     name: "Units",
+     docs: [source_ref: "v#{@version}", main: "Units",
+            source_url: "https://github.com/solatis/units"]]
   end
 
   # Configuration for the OTP application

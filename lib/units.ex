@@ -128,7 +128,7 @@ defmodule Units do
   Returns the amount as an integer
   """
   def int(%{amount: amount}) 
-      when is_float(amount),   do: Float.floor amount
+      when is_float(amount),   do: Kernel.trunc amount
 
   @doc """
   Returns the amount as a float

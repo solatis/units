@@ -119,6 +119,23 @@ defmodule Units do
   def to_float(amount, dst_unit, quantity), do: to(amount, dst_unit, quantity) |> float
 
   @doc """
+  Converts a unit to a string representation which can be displayed without loss
+  of precision. For example, 1024 megabytes will be displayed as "1GB", while 
+  1023 megabytes will be displayed as "1024MB".
+  """
+  def to_string(%{} = tmp) do
+    %{amount: amount, unit: unit, quantity: quantity} = tmp
+    dst = to(tmp, 
+             highest_unit(@index[quantity], amount, unit), 
+             quantity)    
+    
+    %{unit: dst_unit, quantity: dst_quantity} = dst
+    dst_amount = int(dst)    
+    
+    Integer.to_string(dst_amount) <> atom_initial(dst_unit) <> atom_initial(dst_quantity)
+  end  
+
+  @doc """
   Returns the amount as an integer
   """
   def int(%{amount: amount}) 
@@ -135,7 +152,22 @@ defmodule Units do
   """
   def float(%{amount: amount}), do: amount
 
+  @doc """
+  Returns the initial character of an atom. For example, the atom :giga
+  will return "G" and the atom :byte will return "B".
+  """
+  defp atom_initial(atom) when is_atom(atom), do: Atom.to_string(atom) |> String.first |> String.upcase
+
   defp unit_index(index, unit), do: Enum.find_index(index, fn {x, _} -> x == unit end)
+
+  defp highest_unit(index, amount, unit) do
+    {next_unit, {step, _}} = Enum.at(index, (unit_index(index, unit) + 1))
+    
+    case Kernel.rem(amount, step) do
+      0 -> highest_unit(index, Kernel.trunc(amount / step), next_unit)
+      _ -> unit
+    end
+  end
 
   defp convert(index, amount, src, dst) when src < dst do
     {_, {_, step}} = Enum.at(index, src)

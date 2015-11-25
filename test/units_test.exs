@@ -57,6 +57,12 @@ defmodule UnitsTest do
     assert (Units.from(1, :peta, :byte) |> Units.to(:giga, :byte) |> Units.to_int(:peta, :byte)) == 1
     assert (Units.from(1, :peta, :byte) |> Units.to(:tera, :byte) |> Units.to_int(:peta, :byte)) == 1
     assert (Units.from(1, :peta, :byte) |> Units.to(:peta, :byte) |> Units.int)                  == 1
+
+
+    assert (Units.from(10,   :giga, :byte) |> Units.to_string) == "10GB"
+    assert (Units.from(1024, :mega, :byte) |> Units.to_string) == "1GB"
+    assert (Units.from(1024, :byte)        |> Units.to_string) == "1KB"
+
   end
 
   test "meters" do
